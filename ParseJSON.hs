@@ -1,3 +1,5 @@
+module ParseJSON where
+
 import Control.Applicative
 import Control.Monad
 import Text.JSON
@@ -6,22 +8,19 @@ import System.Environment
 (!) :: (JSON a) => JSObject JSValue -> String -> Result a
 (!) = flip valFromObj
 
-data Module = Module
-    { name :: String
-    , values  :: [Value] } deriving (Show)
+type Name = String
+type Arg = Type
+type FunctionResult = Type
+type Extension = Maybe String
 
-data Value = Value
-    { valuename :: String
-    , valuetype :: Type
-    } deriving (Show)
-
-data Type = Function {functionArgs :: [Type], result :: Type}
-          | Var      {varname :: String} 
-          | Data     {dataname :: String, dataArgs :: [Type]}
-          | Record   {fields :: [Field], extension :: Maybe String}
+data Module = Module Name [Value] deriving (Show)
+data Value = Value Name Type deriving (Show)
+data Type = Function [Arg] FunctionResult
+          | Var Name
+          | Data Name [Arg]
+          | Record [Field] Extension
           deriving (Show)
-
-data Field = Field { fieldname :: String, fieldtype :: Type} deriving (Show)          
+data Field = Field Name Type deriving (Show)         
 
 data Docs = Docs [Module] | Doc Module deriving (Show)
 
@@ -77,16 +76,3 @@ instance JSON Docs where
         readJSON (JSObject obj) =
             Doc <$> readJSON (JSObject obj)
         readJSON _ = undefined
-
-main :: IO ()
-main = do
-    (f:_) <- getArgs
-    file <- readFile f
-    stuff <- case (decode file :: Result Docs) of
-        Ok idk -> return idk
-        _ -> undefined
-    ms <- case stuff of
-        Docs x -> return x
-        Doc  x -> return [x]
-    mapM_ print ms
-    
