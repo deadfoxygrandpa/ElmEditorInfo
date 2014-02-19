@@ -13,7 +13,7 @@ type Arg = Type
 type FunctionResult = Type
 type Extension = Maybe String
 
-data Module = Module Name [Value] deriving (Show)
+data Module = Module Name [Value] [Value] deriving (Show)
 data Value = Value Name Type deriving (Show)
 data Type = Function [Arg] FunctionResult
           | Var Name
@@ -30,7 +30,8 @@ instance JSON Module where
     readJSON (JSObject obj) =
         Module          <$>
         obj ! "name"    <*>
-        obj ! "values"
+        obj ! "values"  <*>
+        obj ! "aliases"
     readJSON _ = mzero
 
 instance JSON Value where
