@@ -12,9 +12,11 @@ type Name = String
 type Arg = Type
 type FunctionResult = Type
 type Extension = Maybe String
+type TypeVariable = String
 
-data Module = Module Name [Value] [Value] deriving (Show)
+data Module = Module Name [Value] [Value] [DataType] deriving (Show)
 data Value = Value Name Type deriving (Show)
+data DataType = DataType Name [TypeVariable] [Value] deriving (Show)
 data Type = Function [Arg] FunctionResult
           | Var Name
           | Data Name [Arg]
@@ -31,49 +33,60 @@ instance JSON Module where
         Module          <$>
         obj ! "name"    <*>
         obj ! "values"  <*>
-        obj ! "aliases"
+        obj ! "aliases" <*>
+        obj ! "datatypes"
     readJSON _ = mzero
 
 instance JSON Value where
-        showJSON = undefined
+    showJSON = undefined
 
-        readJSON (JSObject obj) =
-            Value <$>
-            obj ! "name" <*>
-            obj ! "type"
-        readJSON _ = undefined
+    readJSON (JSObject obj) =
+        Value <$>
+        obj ! "name" <*>
+        obj ! "type"
+    readJSON _ = undefined
+
+instance JSON DataType where
+    showJSON = undefined
+
+    readJSON (JSObject obj) =
+        DataType <$>
+        obj ! "name" <*>
+        obj ! "typeVariables" <*>
+        obj ! "constructors"
+    readJSON _ = undefined   
 
 instance JSON Type where
-        showJSON = undefined
+    showJSON = undefined
 
-        readJSON (JSObject obj) =
-            case tag of
-                "function" -> Function <$> obj ! "args" <*> obj ! "result"
-                "var"      -> Var      <$> obj ! "name"
-                "adt"      -> Data     <$> obj ! "name" <*> obj ! "args"
-                "record"   -> Record   <$> obj ! "fields" <*> return Nothing
-            where tag = case resultToEither (obj ! "tag") of
-                            Right s -> s
-                            Left _ -> undefined
-        readJSON _ = undefined  
+    readJSON (JSObject obj) =
+        case tag of
+            "function" -> Function <$> obj ! "args" <*> obj ! "result"
+            "var"      -> Var      <$> obj ! "name"
+            "adt"      -> Data     <$> obj ! "name" <*> obj ! "args"
+            "record"   -> Record   <$> obj ! "fields" <*> return Nothing
+        where tag = case resultToEither (obj ! "tag") of
+                        Right s -> s
+                        Left _ -> undefined
+    readJSON _ = undefined  
 
 instance JSON Field where
-        showJSON = undefined
+    showJSON = undefined
 
-        readJSON (JSArray arr) =
-            Field <$>
-            readJSON n <*>
-            readJSON t
-            where n = head arr
-                  t = arr !! 1
-        readJSON _ = undefined
+    readJSON (JSArray arr) =
+        Field <$>
+        readJSON n <*>
+        readJSON t
+        where n = head arr
+              t = arr !! 1
+    readJSON _ = undefined
 
 
 instance JSON Docs where
-        showJSON = undefined
+    showJSON = undefined
 
-        readJSON (JSArray array) =
-            Docs <$> readJSONs (JSArray array)
-        readJSON (JSObject obj) =
-            Doc <$> readJSON (JSObject obj)
-        readJSON _ = undefined
+    readJSON (JSArray array) =
+        Docs <$> readJSONs (JSArray array)
+    readJSON (JSObject obj) =
+        Doc <$> readJSON (JSObject obj)
+    readJSON _ = undefined

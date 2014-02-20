@@ -11,12 +11,17 @@ strip :: String -> String
 strip = T.unpack . T.strip . T.pack
 
 values :: Module -> [String]
-values (Module name values aliases) =
-	(map (\(Value n t) -> name ++ "." ++ n ++ " : " ++ pick t) values) ++
-	(map (\(Value n t) -> name ++ "." ++ n ++ " = " ++ pick t) aliases)
-	where pick t = case t of
-		Function _ _ 	-> deparenthesize . stripshow $ t
-		_ 				-> stripshow t
+values (Module name values aliases datas) =
+	format "" " : " name values ++
+	format "type " " = " name aliases ++
+	(concatMap (\(DataType n ts vs) -> ["data " ++ name ++ "." ++ n ++ " " ++ (concat . intersperse " " $ ts)] ++ 
+		format "" " = " name vs) datas)
+	where 
+		pick t = case t of
+			Function _ _ 	-> deparenthesize . stripshow $ t
+			_ 				-> stripshow t
+		format prefix separator name vs = 
+			map (\(Value n t) -> prefix ++ name ++ "." ++ n ++ separator ++ pick t) vs
 
 stripshow :: Type -> String
 stripshow = strip . show'
