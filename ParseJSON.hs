@@ -3,7 +3,6 @@ module ParseJSON where
 import Control.Applicative
 import Control.Monad
 import Text.JSON
-import System.Environment
 
 (!) :: (JSON a) => JSObject JSValue -> String -> Result a
 (!) = flip valFromObj
@@ -41,8 +40,8 @@ instance JSON Value where
     showJSON = undefined
 
     readJSON (JSObject obj) =
-        Value <$>
-        obj ! "name" <*>
+        Value           <$>
+        obj ! "name"    <*>
         obj ! "type"
     readJSON _ = undefined
 
@@ -50,9 +49,9 @@ instance JSON DataType where
     showJSON = undefined
 
     readJSON (JSObject obj) =
-        DataType <$>
-        obj ! "name" <*>
-        obj ! "typeVariables" <*>
+        DataType                <$>
+        obj ! "name"            <*>
+        obj ! "typeVariables"   <*>
         obj ! "constructors"
     readJSON _ = undefined   
 
@@ -61,10 +60,10 @@ instance JSON Type where
 
     readJSON (JSObject obj) =
         case tag of
-            "function" -> Function <$> obj ! "args" <*> obj ! "result"
+            "function" -> Function <$> obj ! "args"     <*> obj ! "result"
             "var"      -> Var      <$> obj ! "name"
-            "adt"      -> Data     <$> obj ! "name" <*> obj ! "args"
-            "record"   -> Record   <$> obj ! "fields" <*> return Nothing
+            "adt"      -> Data     <$> obj ! "name"     <*> obj ! "args"
+            "record"   -> Record   <$> obj ! "fields"   <*> return Nothing
         where tag = case resultToEither (obj ! "tag") of
                         Right s -> s
                         Left _ -> undefined
@@ -74,8 +73,8 @@ instance JSON Field where
     showJSON = undefined
 
     readJSON (JSArray arr) =
-        Field <$>
-        readJSON n <*>
+        Field       <$>
+        readJSON n  <*>
         readJSON t
         where n = head arr
               t = arr !! 1

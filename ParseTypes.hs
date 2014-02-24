@@ -2,7 +2,7 @@ module ParseTypes (parseModules) where
 
 import Text.Parsec
 import Text.Parsec.String
-import System.Environment
+import Control.Monad (void)
 import Data.Maybe (catMaybes)
 
 parseName :: Parser String
@@ -24,10 +24,10 @@ parseHeader = do
     return name
 
 parseHeader' :: Parser ()
-parseHeader' = lookAhead parseHeader >> return ()
+parseHeader' = void $ lookAhead parseHeader
 
 parseFooter :: Parser ()
-parseFooter = string "Generating HTML ... Done\n" >> return ()
+parseFooter = void $ string "Generating HTML ... Done\n"
 
 parseSignature :: Parser String
 parseSignature = do
@@ -44,8 +44,11 @@ parseSignature = do
     arr <- optionMaybe $ string "->"
     case arr of
         Just _ -> do 
-            x3 <- parseSignature 
-            return (x' ++ "-> " ++ x3)
+            x3 <- parseSignature
+            pad <- case last x' of
+                ' ' -> return ""
+                _   -> return " "
+            return (x' ++ pad ++ "-> " ++ x3)
         Nothing -> return x'
 
 parseValue :: Parser (Maybe (String, String))
@@ -58,17 +61,12 @@ parseValue = do
 
 parseModule :: Parser (String, [(String, String)])
 parseModule = do
-    name <- parseHeader
+    name <- optionMaybe parseHeader
+    name' <- case name of
+        Just n -> return n
+        Nothing -> return ""
     values <- manyTill parseValue (try parseFooter <|> parseHeader')
-    return (name, catMaybes values)
+    return (name', catMaybes values)
 
 parseModules :: String -> Either ParseError [(String, [(String, String)])]
 parseModules = parse (many parseModule) ""
-
-main :: IO ()
-main = do
-    (f:_) <- getArgs
-    inp <- readFile f
-    case parseModules inp of
-        Left err -> print err
-        Right stuff -> mapM_ (\(s, ss) -> do {putStrLn $ "\nMODULE: " ++ s ++ "\n"; mapM_ (\(n, v) -> putStrLn $ n ++ " : " ++ v) ss}) stuff
