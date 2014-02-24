@@ -12,4 +12,4 @@ main = do
     case mode of
         "docs"  -> getDocs f
         "types" -> getTypes f
-    return ()
+        _       -> putStrLn "Expected either docs or types + a filename"
