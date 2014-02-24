@@ -16,8 +16,8 @@ printTypes file directory =
                 ]
                 []
 
-getTypes :: FilePath ->  IO ()
-getTypes f = do
+getTypes :: String -> FilePath -> IO ()
+getTypes outputFormat f = do
     types <- withTempDirectory "" "elm_editor_info" $ printTypes f
     case parseModules types of
         Left err -> print err

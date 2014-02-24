@@ -8,8 +8,8 @@ import GetTypes
 
 main :: IO ()
 main = do
-    (mode:f:_) <- getArgs
+    (mode:outputFormat:f:_) <- getArgs
     case mode of
-        "docs"  -> getDocs f
-        "types" -> getTypes f
+        "docs"  -> getDocs outputFormat f
+        "types" -> getTypes outputFormat f
         _       -> putStrLn "Expected either docs or types + a filename"
