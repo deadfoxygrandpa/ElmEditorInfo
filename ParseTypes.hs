@@ -1,3 +1,5 @@
+module ParseTypes (parseModules) where
+
 import Text.Parsec
 import Text.Parsec.String
 import System.Environment
@@ -54,16 +56,19 @@ parseValue = do
         '\'' -> return Nothing
         _ -> return $ Just (name, signature)
 
-parseModule :: Parser (String, [Maybe (String, String)])
+parseModule :: Parser (String, [(String, String)])
 parseModule = do
     name <- parseHeader
     values <- manyTill parseValue (try parseFooter <|> parseHeader')
-    return (name, values)
+    return (name, catMaybes values)
+
+parseModules :: String -> Either ParseError [(String, [(String, String)])]
+parseModules = parse (many parseModule) ""
 
 main :: IO ()
 main = do
     (f:_) <- getArgs
     inp <- readFile f
-    case parse (many parseModule) "" inp of
+    case parseModules inp of
         Left err -> print err
-        Right stuff -> mapM_ (\(s, ss) -> do {putStrLn $ "\nMODULE: " ++ s ++ "\n"; mapM_ (\(n, v) -> putStrLn $ n ++ " : " ++ v) (catMaybes ss)}) stuff
+        Right stuff -> mapM_ (\(s, ss) -> do {putStrLn $ "\nMODULE: " ++ s ++ "\n"; mapM_ (\(n, v) -> putStrLn $ n ++ " : " ++ v) ss}) stuff
