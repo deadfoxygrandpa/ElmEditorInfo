@@ -30,7 +30,7 @@ data Docs = Docs [Module] | Doc Module deriving (Show)
 instance JSON Module where
     showJSON m@(Module name _ _ _) = 
         JSObject . toJSObject $
-            [ ("module_name", JSString $ toJSString name)
+            [ ("module_name", JSString . toJSString $ name)
             , ("values", JSObject . toJSObject . values2 $ m)
             ]
 
