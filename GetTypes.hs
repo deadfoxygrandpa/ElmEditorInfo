@@ -2,6 +2,7 @@ module GetTypes where
 
 import System.IO.Temp (withTempDirectory)
 import System.Process (readProcess)
+import Text.JSON
 
 import ParseTypes
 
@@ -21,4 +22,6 @@ getTypes outputFormat f = do
     types <- withTempDirectory "" "elm_editor_info" $ printTypes f
     case parseModules types of
         Left err -> print err
-        Right stuff -> mapM_ (\(s, ss) -> do {putStrLn $ "\nMODULE: " ++ s ++ "\n"; mapM_ (\(n, v) -> putStrLn $ n ++ " : " ++ v) ss}) stuff        
+        Right stuff -> case outputFormat of
+            "lines" -> mapM_ putStrLn (showLines stuff)
+            "json"  -> putStrLn . encode . showJSON $ stuff

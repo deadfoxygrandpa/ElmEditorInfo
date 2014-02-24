@@ -1,18 +1,49 @@
-module ParseTypes (parseModules) where
+module ParseTypes where
 
 import Text.Parsec
 import Text.Parsec.String
 import Control.Monad (void)
 import Data.Maybe (catMaybes)
+import Data.List (intercalate)
+import Text.JSON
 
-parseName :: Parser String
+type Name = String
+type Signature = String
+data Module = Module Name [Value] deriving (Show)
+data Value = Value Name Signature deriving (Show)
+
+
+-- Output formatting stuff
+
+showLines :: [Module] -> [String]
+showLines = map showModule
+    where showModule (Module name values) = intercalate "\n" $ map (\(Value n s) -> name ++ "." ++ n ++ " : " ++ s) values
+
+instance JSON Module where
+    showJSON (Module name values) = JSObject . toJSObject $
+        [ ("module_name", JSString . toJSString $ name)
+        , ("values", JSObject . toJSObject . valuesJSON $ values)
+        ]
+
+    readJSON = undefined
+
+valuesJSON :: [Value] -> [(String, JSValue)]
+valuesJSON = map valueJSON
+
+valueJSON :: Value -> (String, JSValue)
+valueJSON (Value name signature) = (name, JSString . toJSString $ signature)
+
+
+-- Parsing stuff
+
+parseName :: Parser Name
 parseName = do
     name <- many $ noneOf " "
     many1 space
     char ':'
     return name 
 
-parseHeader :: Parser String
+parseHeader :: Parser Name
 parseHeader = do
     char '['
     many $ noneOf "]"
@@ -29,7 +60,7 @@ parseHeader' = void $ lookAhead parseHeader
 parseFooter :: Parser ()
 parseFooter = void $ string "Generating HTML ... Done\n"
 
-parseSignature :: Parser String
+parseSignature :: Parser Signature
 parseSignature = do
     optional . many . oneOf $ "\n\t "
     x <- many $ noneOf ",\n->"
@@ -51,22 +82,22 @@ parseSignature = do
             return (x' ++ pad ++ "-> " ++ x3)
         Nothing -> return x'
 
-parseValue :: Parser (Maybe (String, String))
+parseValue :: Parser (Maybe Value)
 parseValue = do
     name <- parseName
     signature <- parseSignature
     case head name of
         '\'' -> return Nothing
-        _ -> return $ Just (name, signature)
+        _ -> return . Just $ Value name signature
 
-parseModule :: Parser (String, [(String, String)])
+parseModule :: Parser Module
 parseModule = do
     name <- optionMaybe parseHeader
     name' <- case name of
         Just n -> return n
         Nothing -> return ""
     values <- manyTill parseValue (try parseFooter <|> parseHeader')
-    return (name', catMaybes values)
+    return $ Module name' (catMaybes values)
 
-parseModules :: String -> Either ParseError [(String, [(String, String)])]
+parseModules :: String -> Either ParseError [Module]
 parseModules = parse (many parseModule) ""
